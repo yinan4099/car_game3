@@ -111,16 +111,9 @@ public class PrometeoCarController : MonoBehaviour
       [Space(10)]
       //The following variables lets you to set up touch controls for mobile devices.
       public bool useTouchControls = false;
-      public GameObject throttleButton;
-      PrometeoTouchInput throttlePTI;
-      public GameObject reverseButton;
-      PrometeoTouchInput reversePTI;
-      public GameObject turnRightButton;
-      PrometeoTouchInput turnRightPTI;
-      public GameObject turnLeftButton;
-      PrometeoTouchInput turnLeftPTI;
-      public GameObject handbrakeButton;
-      PrometeoTouchInput handbrakePTI;
+      public GameObject joystickOBJ;
+      public Joystick joystickFJ;
+      public VariableJoystick joystickVJ;
 
     //CAR DATA
 
@@ -242,15 +235,11 @@ public class PrometeoCarController : MonoBehaviour
         }
 
         if(useTouchControls){
-          if(throttleButton != null && reverseButton != null &&
-          turnRightButton != null && turnLeftButton != null
-          && handbrakeButton != null){
+          if(joystickOBJ != null){
 
-            throttlePTI = throttleButton.GetComponent<PrometeoTouchInput>();
-            reversePTI = reverseButton.GetComponent<PrometeoTouchInput>();
-            turnLeftPTI = turnLeftButton.GetComponent<PrometeoTouchInput>();
-            turnRightPTI = turnRightButton.GetComponent<PrometeoTouchInput>();
-            handbrakePTI = handbrakeButton.GetComponent<PrometeoTouchInput>();
+            joystickFJ = joystickOBJ.GetComponent<Joystick>();
+            joystickVJ = joystickOBJ.GetComponent <VariableJoystick>();
+       
             touchControlsSetup = true;
 
           }else{
@@ -288,44 +277,17 @@ public class PrometeoCarController : MonoBehaviour
       A (turn left), D (turn right) or Space bar (handbrake).
       */
       if (useTouchControls && touchControlsSetup){
+            print(Mathf.Abs(Convert.ToInt32(carSpeed)));
+            if(Mathf.Abs(joystickFJ.Direction.y) > 0 ) { CancelInvoke("DecelerateCar"); deceleratingCar = false; }
+            if (joystickFJ.Direction.y > 0) { GoForward(); }
+            if (joystickFJ.Direction.y < 0) { GoReverse(); }
 
-        if(throttlePTI.buttonPressed){
-          CancelInvoke("DecelerateCar");
-          deceleratingCar = false;
-          GoForward();
+            if((!(Mathf.Abs(joystickFJ.Direction.y) > 0)) && !deceleratingCar){
+             InvokeRepeating("DecelerateCar", 0f, 0.1f);
+             deceleratingCar = true;
+            }
         }
-        if(reversePTI.buttonPressed){
-          CancelInvoke("DecelerateCar");
-          deceleratingCar = false;
-          GoReverse();
-        }
-
-        if(turnLeftPTI.buttonPressed){
-          TurnLeft();
-        }
-        if(turnRightPTI.buttonPressed){
-          TurnRight();
-        }
-        if(handbrakePTI.buttonPressed){
-          CancelInvoke("DecelerateCar");
-          deceleratingCar = false;
-          Handbrake();
-        }
-        if(!handbrakePTI.buttonPressed){
-          RecoverTraction();
-        }
-        if((!throttlePTI.buttonPressed && !reversePTI.buttonPressed)){
-          ThrottleOff();
-        }
-        if((!reversePTI.buttonPressed && !throttlePTI.buttonPressed) && !handbrakePTI.buttonPressed && !deceleratingCar){
-          InvokeRepeating("DecelerateCar", 0f, 0.1f);
-          deceleratingCar = true;
-        }
-        if(!turnLeftPTI.buttonPressed && !turnRightPTI.buttonPressed && steeringAxis != 0f){
-          ResetSteeringAngle();
-        }
-
-      }else{
+        else{
 
         if(Input.GetKey(KeyCode.W)){
           CancelInvoke("DecelerateCar");
@@ -507,10 +469,19 @@ public class PrometeoCarController : MonoBehaviour
         DriftCarPS();
       }
       // The following part sets the throttle power to 1 smoothly.
-      throttleAxis = throttleAxis + (Time.deltaTime * 3f);
-      if(throttleAxis > 1f){
-        throttleAxis = 1f;
-      }
+     
+     
+      if(useTouchControls)
+        { throttleAxis = joystickFJ.Direction.y; }
+        else {
+
+            throttleAxis = throttleAxis + (Time.deltaTime * 3f);
+            if (throttleAxis > 1f)
+            {
+                throttleAxis = 1f;
+            }
+        }
+
       //If the car is going backwards, then apply brakes in order to avoid strange
       //behaviours. If the local velocity in the 'z' axis is less than -1f, then it
       //is safe to apply positive torque to go forward.
@@ -520,13 +491,14 @@ public class PrometeoCarController : MonoBehaviour
         if(Mathf.RoundToInt(carSpeed) < maxSpeed){
           //Apply positive torque in all wheels to go forward if maxSpeed has not been reached.
           frontLeftCollider.brakeTorque = 0;
+                
           frontLeftCollider.motorTorque = (accelerationMultiplier * 50f) * throttleAxis;
           frontRightCollider.brakeTorque = 0;
           frontRightCollider.motorTorque = (accelerationMultiplier * 50f) * throttleAxis;
           rearLeftCollider.brakeTorque = 0;
-          rearLeftCollider.motorTorque = (accelerationMultiplier * 50f) * throttleAxis;
+          rearLeftCollider.motorTorque = (accelerationMultiplier * 50f) * throttleAxis ;
           rearRightCollider.brakeTorque = 0;
-          rearRightCollider.motorTorque = (accelerationMultiplier * 50f) * throttleAxis;
+          rearRightCollider.motorTorque = (accelerationMultiplier * 50f) * throttleAxis ;
         }else {
           // If the maxSpeed has been reached, then stop applying torque to the wheels.
           // IMPORTANT: The maxSpeed variable should be considered as an approximation; the speed of the car
