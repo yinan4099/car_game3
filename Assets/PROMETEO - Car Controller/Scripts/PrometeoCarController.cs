@@ -277,19 +277,31 @@ public class PrometeoCarController : MonoBehaviour
       A (turn left), D (turn right) or Space bar (handbrake).
       */
       if (useTouchControls && touchControlsSetup){
-            print(Mathf.Abs(Convert.ToInt32(carSpeed)));
-            if(Mathf.Abs(joystickFJ.Direction.y) > 0 ) { CancelInvoke("DecelerateCar"); deceleratingCar = false; }
-            if (joystickFJ.Direction.y > 0) { GoForward(); }
-            if (joystickFJ.Direction.y < 0) { GoReverse(); }
+            //print($"{steeringSpeed},s{steeringAxis}");
+            if (Mathf.Abs(joystickFJ.Direction.y) > 0.0f ) { CancelInvoke("DecelerateCar"); deceleratingCar = false; }
+            if (joystickFJ.Direction.y > 0.1f) { GoForward(); }
+            if (joystickFJ.Direction.y < -0.1f && joystickFJ.Direction.y != 0) { GoReverse(); }
 
-            if((!(Mathf.Abs(joystickFJ.Direction.y) > 0)) && !deceleratingCar){
+            if((!(Mathf.Abs(joystickFJ.Direction.y) > 0.1f)) && !deceleratingCar){
              InvokeRepeating("DecelerateCar", 0f, 0.1f);
              deceleratingCar = true;
+            }
+            if (  MathF.Abs(joystickFJ.Direction.x) > 0.3f) {  steeringSpeed = MathF.Abs(joystickFJ.Direction.x); }
+            else if (MathF.Abs(joystickFJ.Direction.x) < 0.3f && MathF.Abs(joystickFJ.Direction.x) > 0.0f) { steeringSpeed = MathF.Abs(joystickFJ.Direction.x)/5; }
+            if (joystickFJ.Direction.x < 0.0f ){ TurnLeft();  }
+            if (joystickFJ.Direction.x > 0.0f) { TurnRight(); }
+
+            print((MathF.Abs(joystickFJ.Direction.x) == 0.0f && steeringAxis != 0f));
+            if ((MathF.Abs(joystickFJ.Direction.x) == 0.0f && steeringAxis != 0f))
+            {
+                
+                ResetSteeringAngle();
             }
         }
         else{
 
-        if(Input.GetKey(KeyCode.W)){
+            print($"{steeringSpeed},s{steeringAxis}");
+            if (Input.GetKey(KeyCode.W)){
           CancelInvoke("DecelerateCar");
           deceleratingCar = false;
           GoForward();
@@ -386,7 +398,7 @@ public class PrometeoCarController : MonoBehaviour
 
     //The following method turns the front car wheels to the left. The speed of this movement will depend on the steeringSpeed variable.
     public void TurnLeft(){
-      steeringAxis = steeringAxis - (Time.deltaTime * 10f * steeringSpeed);
+      steeringAxis = joystickFJ.Direction.x;
       if(steeringAxis < -1f){
         steeringAxis = -1f;
       }
@@ -397,8 +409,8 @@ public class PrometeoCarController : MonoBehaviour
 
     //The following method turns the front car wheels to the right. The speed of this movement will depend on the steeringSpeed variable.
     public void TurnRight(){
-      steeringAxis = steeringAxis + (Time.deltaTime * 10f * steeringSpeed);
-      if(steeringAxis > 1f){
+        steeringAxis = joystickFJ.Direction.x;
+        if (steeringAxis > 1f){
         steeringAxis = 1f;
       }
       var steeringAngle = steeringAxis * maxSteeringAngle;
